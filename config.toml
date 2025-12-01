@@ -1,0 +1,15 @@
+[paths]
+# Relative path from binary (auto dirs create)
+links_file = "source.txt"
+save_root = "dl"
+sub_dir = "a"
+# start_name - string but number it start save files from this
+start_name = "0"
+
+[timings]
+# Inside auto random request_delay + random value (500..800)
+request_delay = "800"
+
+[cookies]
+# Site's cookies. Write domain
+"rule34.xxx" = ""

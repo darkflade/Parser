@@ -1,4 +1,5 @@
 use std::error::Error;
+use colored::Colorize;
 use select::document::Document;
 use select::predicate::{Attr, Class, Name, Predicate};
 use crate::models::types::{ImageInfo, MediaType, Rule34Parse};
@@ -6,7 +7,6 @@ use crate::utility::utils::check_image;
 
 // Tags Extractor
 pub fn extract_tags(html_content: &str) -> Result<ImageInfo, Box<dyn Error>> {
-    println!("Getting info...");
 
     let document = Document::from(html_content);
     let mut info = ImageInfo::default();
@@ -14,12 +14,10 @@ pub fn extract_tags(html_content: &str) -> Result<ImageInfo, Box<dyn Error>> {
     let sidebar_node = match document.find(Attr("id","tag-sidebar")).next(){
         Some(node) => node,
         None => {
-            println!("[Warn] Sidebar not found");
+            println!("{}", "[ERROR] Sidebar not found".red());
             return Ok(info);
         },
     };
-
-    println!("Sidebar found. Searching for tags inside...");
 
     let li_selector = Name("li").and(Class("tag"));
 
@@ -32,7 +30,6 @@ pub fn extract_tags(html_content: &str) -> Result<ImageInfo, Box<dyn Error>> {
             s if s.contains("tag-type-character") => &mut info.characters,
             s if s.contains("tag-type-general") => &mut info.general,
             _ => {
-                println!("Found Shit instead of tag: {}", search_class);
                 continue;
             },
         };
@@ -105,7 +102,6 @@ fn try_extract_video (html_content: &str) -> Result<Option<String>, Box<dyn Erro
         .and_then(|video_node| video_node.find(Name("source")).next())
         .and_then(|source_node| source_node.attr("src"))
         .map(|src| {
-            println!("Found video link: {}", src);
             src.to_string()
         });
 

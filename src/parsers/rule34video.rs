@@ -1,12 +1,14 @@
 use std::error::Error;
+use colored::Colorize;
 use regex::Regex;
 use select::document::Document;
 use select::predicate::{ Class, Name};
+use wreq::Client;
+use wreq::header::LOCATION;
 use crate::models::types::{ImageInfo, MediaType};
 
 // Tags Extractor
 pub fn extract_tags(html_content: &str) -> Result<ImageInfo, Box<dyn Error>> {
-    println!("Getting info...");
 
     let mut info = ImageInfo::default();
 
@@ -29,7 +31,7 @@ pub fn extract_tags(html_content: &str) -> Result<ImageInfo, Box<dyn Error>> {
 
 }
 
-pub fn extract_media_link(html_content: &str) -> Result<MediaType, Box<dyn Error>> {
+pub async fn extract_media_link(html_content: &str, client: &Client) -> Result<MediaType, Box<dyn Error>> {
 
     let document = Document::from(html_content);
 
@@ -42,7 +44,6 @@ pub fn extract_media_link(html_content: &str) -> Result<MediaType, Box<dyn Error
             .unwrap_or_default();
 
         if label_text.trim() == "Download" {
-            println!("Found Download section!");
 
             let links: Vec<(String, String)> = wrap_node.find(Name("a"))
                 .filter_map(|n| {
@@ -54,40 +55,64 @@ pub fn extract_media_link(html_content: &str) -> Result<MediaType, Box<dyn Error
 
             for (text, href) in &links {
                 if text.contains("2160") {
-                    println!("Selected 2160p video");
-                    return Ok(MediaType::Video(href.clone()));
+                    return get_hidden_link(href, client).await;
                 }
             }
 
             for (text, href) in &links {
                 if text.contains("1080") {
-                    println!("Selected 1080p video");
-                    return Ok(MediaType::Video(href.clone()));
+                    return get_hidden_link(href, client).await;
                 }
             }
 
             for (text, href) in &links {
                 if text.contains("720") {
-                    println!("Selected 720p video");
-                    return Ok(MediaType::Video(href.clone()));
+                    return get_hidden_link(href, client).await;
                 }
             }
 
             for (text, href) in &links {
                 if text.contains("480") {
-                    println!("Selected 480p video");
-                    return Ok(MediaType::Video(href.clone()));
+                    return get_hidden_link(href, client).await;
                 }
             }
 
             if let Some((_, href)) = links.first() {
-                println!("Selected default (first) video");
-                return Ok(MediaType::Video(href.clone()));
+                return get_hidden_link(href, client).await;
             }
         }
     }
 
-    println!("Download section or video links not found");
+    println!("{}","Download section or video links not found".red());
+
+
     Ok(MediaType::NotFound)
 
+}
+
+async fn get_hidden_link(href: &str, client: &Client) -> Result<MediaType, Box<dyn Error>> {
+
+    let response = client
+        .get(href)
+        .redirect(wreq::redirect::Policy::none())
+        .send()
+        .await?;
+
+    if response.status().is_redirection() {
+        if let Some(location_header) = response.headers().get(LOCATION) {
+            let final_url = location_header.to_str()?;
+            return Ok(MediaType::Video(final_url.to_string()));
+        } else {
+            return Err(format!(
+                "Redirection occurred ({}), but Location header is missing.",
+                response.status()
+            ).into());
+        }
+    }
+
+    if response.status().is_success() {
+        return Ok(MediaType::Video(href.to_string()));
+    }
+
+    Err(format!("Failed to fetch hidden link. Status: {}", response.status()).into())
 }

@@ -1,6 +1,7 @@
 use std::error::Error;
-use reqwest::Client;
-use reqwest::header::{HeaderMap, HeaderValue, COOKIE, USER_AGENT};
+use wreq::Client;
+use wreq::header::{HeaderMap, HeaderValue, COOKIE, USER_AGENT};
+use wreq_util::Emulation;
 
 pub async fn create_net_client(user_agent: &str, cookie: &str) -> Result<Client, Box<dyn Error>> {
     let mut headers = HeaderMap::new();
@@ -17,6 +18,7 @@ pub async fn create_net_client(user_agent: &str, cookie: &str) -> Result<Client,
     }
 
     let client = Client::builder()
+        .emulation(Emulation::Firefox139)
         .default_headers(headers)
         .build()?;
 

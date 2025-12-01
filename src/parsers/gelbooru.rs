@@ -6,7 +6,6 @@ use crate::models::types::{ImageInfo, MediaType};
 use crate::utility::utils;
 
 pub fn extract_tags(html_content: &str) -> Result<ImageInfo, Box<dyn Error>> {
-    println!("Getting info...");
 
     let document = Document::from(html_content);
     let mut info = ImageInfo::default();
@@ -19,7 +18,6 @@ pub fn extract_tags(html_content: &str) -> Result<ImageInfo, Box<dyn Error>> {
         },
     };
 
-    println!("Sidebar found. Searching for tags inside...");
 
     let li_selector = Name("li");
 
@@ -32,7 +30,6 @@ pub fn extract_tags(html_content: &str) -> Result<ImageInfo, Box<dyn Error>> {
             s if s.contains("tag-type-character") => &mut info.characters,
             s if s.contains("tag-type-general") => &mut info.general,
             _ => {
-                println!("Found Shit instead of tag: {}", search_class);
                 continue;
             },
         };

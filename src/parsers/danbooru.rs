@@ -6,7 +6,6 @@ use crate::utility::utils;
 
 // Tags Extractor
 pub fn extract_tags(html_content: &str) -> Result<ImageInfo, Box<dyn Error>> {
-    println!("Getting info...");
 
     let document = Document::from(html_content);
     let mut info = ImageInfo::default();
@@ -55,15 +54,13 @@ fn try_extract_image(html_content: &str) -> Result<Option<String>, Box<dyn Error
     let document = Document::from(html_content);
     for node in document.find(Class("image-container")) {
         if let Some(url) = node.attr("data-file-url") {
-            println!("Found image URL: {}", url);
 
             if utils::check_image(url) {
                 return Ok(Some(url.to_string()));
             }
         }
     }
-
-    println!("Cannot find attribute");
+    
     Ok(None)
 }
 
